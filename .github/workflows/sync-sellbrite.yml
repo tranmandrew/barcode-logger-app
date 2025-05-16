@@ -2,13 +2,15 @@ name: Manual Inventory Sync
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'  # runs daily at 3 AM UTC
 
 jobs:
   sync:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo (fresh)
+      - name: Checkout repo (force fresh)
         uses: actions/checkout@v4
         with:
           clean: true
