@@ -1,7 +1,6 @@
 const axios = require('axios');
 const { createClient } = require('@supabase/supabase-js');
 
-// Pull secrets from GitHub environment variables
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SELLBRITE_API_KEY = process.env.SELLBRITE_API_KEY;
@@ -24,25 +23,29 @@ function formatForStaging(product) {
     sku: product.sku,
     barcode: product.upc || product.ean || product.sku,
     title: product.name,
-    bin_location: product.bin_location || 'Unassigned',
+    bin_location: product.bin_location || 'unsassigned',
     cost: parseFloat(product.cost || 0),
   };
 }
 
 async function uploadToSupabase(formattedItems) {
-  const { error } = await supabase.from('items_staging').delete();
-  if (error) throw new Error('Failed to clear staging table: ' + error.message);
+  // Clear previous records
+  await supabase.from('items_staging').delete().neq('sku', '');
 
-  const { error: insertError } = await supabase.from('items_staging').insert(formattedItems);
-  if (insertError) throw new Error('Insert failed: ' + insertError.message);
-
-  console.log('✔ Synced inventory to items_staging');
+  // Insert new records
+  const { error } = await supabase.from('items_staging').insert(formattedItems);
+  if (error) {
+    console.error('Upload failed:', error.message);
+    process.exit(1);
+  } else {
+    console.log(`✅ Uploaded ${formattedItems.length} items to items_staging`);
+  }
 }
 
 (async () => {
   try {
-    const raw = await fetchSellbriteInventory();
-    const formatted = raw.map(formatForStaging);
+    const inventory = await fetchSellbriteInventory();
+    const formatted = inventory.map(formatForStaging);
     await uploadToSupabase(formatted);
   } catch (err) {
     console.error('❌ Sync error:', err.message);
