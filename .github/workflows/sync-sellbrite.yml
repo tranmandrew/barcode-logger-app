@@ -1,28 +1,27 @@
-name: Sync Sellbrite Inventory
+name: Manual Inventory Sync
 
 on:
-  schedule:
-    - cron: '0 3 * * *' # 3AM UTC = 9PM CST
   workflow_dispatch:
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: Set up Node
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install axios @supabase/supabase-js dotenv
+        run: npm install
 
-      - name: Run sync script
+      - name: Run Sellbrite sync script
         run: node scripts/sync-sellbrite.js
         env:
-          SELLBRITE_API_KEY: ${{ secrets.SELLBRITE_API_KEY }}
-          SELLBRITE_API_SECRET: ${{ secrets.SELLBRITE_API_SECRET }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SELLBRITE_API_KEY: ${{ secrets.SELLBRITE_API_KEY }}
+          SELLBRITE_API_SECRET: ${{ secrets.SELLBRITE_API_SECRET }}
