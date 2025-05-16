@@ -8,11 +8,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo with clean state
+      - name: Checkout repo (force fresh)
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
           clean: true
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Debug – Show script content
+      - name: 🧪 Debug: Print script contents
         run: cat scripts/sync-sellbrite.js
 
       - name: Run Sellbrite sync script
