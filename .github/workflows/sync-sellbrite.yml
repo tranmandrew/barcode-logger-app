@@ -6,7 +6,6 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo (force fresh)
         uses: actions/checkout@v4
