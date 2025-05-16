@@ -1,12 +1,13 @@
 const axios = require('axios');
 const { createClient } = require('@supabase/supabase-js');
 
+// Pull secrets from GitHub environment variables
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const SELLBRITE_API_KEY = process.env.SELLBRITE_API_KEY;
 const SELLBRITE_API_SECRET = process.env.SELLBRITE_API_SECRET;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function fetchSellbriteInventory() {
   const res = await axios.get('https://api.sellbrite.com/v1/products', {
@@ -29,28 +30,22 @@ function formatForStaging(product) {
 }
 
 async function uploadToSupabase(formattedItems) {
-  const { error } = await supabase
-    .from('items_staging')
-    .delete()
-    .neq('sku', ''); // Clear staging before inserting
-
+  const { error } = await supabase.from('items_staging').delete();
   if (error) throw new Error('Failed to clear staging table: ' + error.message);
 
-  const { error: insertError } = await supabase
-    .from('items_staging')
-    .insert(formattedItems);
+  const { error: insertError } = await supabase.from('items_staging').insert(formattedItems);
+  if (insertError) throw new Error('Insert failed: ' + insertError.message);
 
-  if (insertError) throw new Error('Failed to upload items: ' + insertError.message);
+  console.log('✔ Synced inventory to items_staging');
 }
 
 (async () => {
   try {
-    const products = await fetchSellbriteInventory();
-    const formatted = products.map(formatForStaging);
+    const raw = await fetchSellbriteInventory();
+    const formatted = raw.map(formatForStaging);
     await uploadToSupabase(formatted);
-    console.log('✅ Inventory synced to Supabase staging.');
   } catch (err) {
-    console.error('❌ Sync failed:', err.message);
+    console.error('❌ Sync error:', err.message);
     process.exit(1);
   }
 })();
