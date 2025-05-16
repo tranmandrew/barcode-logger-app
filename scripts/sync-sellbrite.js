@@ -29,10 +29,8 @@ function formatForStaging(product) {
 }
 
 async function uploadToSupabase(formattedItems) {
-  // Clear previous records
   await supabase.from('items_staging').delete().neq('sku', '');
 
-  // Insert new records
   const { error } = await supabase.from('items_staging').insert(formattedItems);
   if (error) {
     console.error('Upload failed:', error.message);
@@ -51,5 +49,4 @@ async function uploadToSupabase(formattedItems) {
     console.error('❌ Sync error:', err.message);
     process.exit(1);
   }
-  console.log("🚀 Sync script triggered at", new Date().toISOString());
 })();
