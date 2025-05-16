@@ -9,7 +9,7 @@ jobs:
 
     steps:
       - name: Checkout repo (force fresh)
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           clean: true
           fetch-depth: 0
@@ -21,9 +21,6 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-
-      - name: 🧪 Debug: Print script contents
-        run: cat scripts/sync-sellbrite.js
 
       - name: Run Sellbrite sync script
         run: node scripts/sync-sellbrite.js
