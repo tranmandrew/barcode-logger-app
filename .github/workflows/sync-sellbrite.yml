@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repo (fresh)
         uses: actions/checkout@v4
         with:
           clean: true
@@ -20,7 +20,7 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run Sellbrite sync script
         run: node scripts/sync-sellbrite.js
