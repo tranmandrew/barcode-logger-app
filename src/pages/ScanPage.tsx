@@ -175,6 +175,7 @@ export default function ScanPage() {
         </button>
         <button onClick={() => window.print()}>Print</button>
         <button onClick={() => (window.location.href = "/dashboard")}>Dashboard</button>
+        <button onClick={() => (window.location.href = "/sync")}>Manual Sync</button> {/* ✅ NEW */}
       </div>
 
       {sku && itemTitle && (
