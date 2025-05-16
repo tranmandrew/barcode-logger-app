@@ -51,4 +51,5 @@ async function uploadToSupabase(formattedItems) {
     console.error('❌ Sync error:', err.message);
     process.exit(1);
   }
+  console.log("🚀 Sync script triggered at", new Date().toISOString());
 })();
