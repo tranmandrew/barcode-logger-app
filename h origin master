@@ -1,0 +1,45 @@
+[33m30847b1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{0}: Branch: renamed refs/heads/master to refs/heads/main
+[33m30847b1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{2}: pull origin master --rebase: Fast-forward
+[33mae507e5[m HEAD@{3}: commit: Fix: use 'npm ci' to install all dependencies including axios
+[33m96c5121[m HEAD@{4}: commit: Recreate fresh sync-sellbrite.yml from scratch
+[33m5cb2fdf[m HEAD@{5}: pull origin master --rebase: Fast-forward
+[33m9b18e68[m HEAD@{6}: rebase (abort): returning to refs/heads/master
+[33m48af70f[m HEAD@{7}: commit: Fix YAML line 25: replace invalid 'script:' key with 'run:'
+[33m60e9d92[m HEAD@{8}: commit: Fix rebase conflict and finalize corrected sync-sellbrite.yml
+[33m9236ec1[m HEAD@{9}: pull origin master --rebase (start): checkout 9236ec10bbc60f36fd0f63844e6e69067d87512d
+[33m9b18e68[m HEAD@{10}: rebase (abort): returning to refs/heads/master
+[33ma513767[m HEAD@{11}: commit: Fix YAML syntax: remove invalid 'script:' key and use proper 'run:'
+[33m9236ec1[m HEAD@{12}: pull origin master --rebase (start): checkout 9236ec10bbc60f36fd0f63844e6e69067d87512d
+[33m9b18e68[m HEAD@{13}: commit: Fix YAML syntax: remove invalid 'script:' key and use proper 'run:'
+[33m81abe12[m HEAD@{14}: pull origin master --rebase (finish): returning to refs/heads/master
+[33m81abe12[m HEAD@{15}: pull origin master --rebase (start): checkout 81abe12396c0a9b428c71f5bcee098d8ea01fecc
+[33mc8adf49[m HEAD@{16}: commit: Force overwrite: remove lingering dotenv require from sync-sellbrite.js
+[33m99cb716[m HEAD@{17}: commit: Add debug print to show actual script in GitHub Actions
+[33mdea7f3a[m HEAD@{18}: commit: Fix shallow checkout causing stale script execution
+[33m842aff2[m HEAD@{19}: commit: Fix shallow checkout causing stale script execution
+[33ma395d3d[m HEAD@{20}: commit: Fix stale GitHub Actions cache with clean checkout
+[33mb901e33[m HEAD@{21}: pull origin master --rebase (finish): returning to refs/heads/master
+[33mb901e33[m HEAD@{22}: pull origin master --rebase (start): checkout b901e332ea0376188a31d50d88af4eab7e93b089
+[33me214cd3[m HEAD@{23}: commit: Trigger GitHub Action with updated script (no dotenv)
+[33m157af26[m HEAD@{24}: pull origin master --rebase (finish): returning to refs/heads/master
+[33m157af26[m HEAD@{25}: pull origin master --rebase (pick): Remove dotenv completely and use process.env
+[33mefff9ab[m HEAD@{26}: pull origin master --rebase (start): checkout efff9abef9d733c970119422cfacbc67ea4866bc
+[33mddd3154[m HEAD@{27}: reset: moving to HEAD
+[33mddd3154[m HEAD@{28}: commit: Remove dotenv completely and use process.env
+[33mf068e5c[m HEAD@{29}: commit: Remove dotenv usage and rely on GitHub Actions env
+[33m2612631[m HEAD@{30}: pull origin master --rebase (finish): returning to refs/heads/master
+[33m2612631[m HEAD@{31}: pull origin master --rebase (pick): Remove dotenv and use environment variables directly
+[33m8a16503[m HEAD@{32}: pull origin master --rebase (start): checkout 8a16503f9f033338fbcd22bfd30a1556d07cf80a
+[33md999056[m HEAD@{33}: reset: moving to HEAD
+[33md999056[m HEAD@{34}: commit: Remove dotenv and use environment variables directly
+[33m8a0fb93[m HEAD@{35}: pull origin master --rebase (finish): returning to refs/heads/master
+[33m8a0fb93[m HEAD@{36}: pull origin master --rebase (pick): Add dotenv dependency
+[33mee83af3[m HEAD@{37}: pull origin master --rebase (start): checkout ee83af35475fe5380aeb542c56b2dd6ce7b828a7
+[33m14b21de[m HEAD@{38}: reset: moving to HEAD
+[33m14b21de[m HEAD@{39}: commit: Add dotenv dependency
+[33m01afb01[m HEAD@{40}: commit: Add BrowserRouter and /dashboard route
+[33mc2a8a97[m HEAD@{41}: commit: Clean up broken files and restore valid project structure
+[33m7cbb9eb[m HEAD@{42}: pull origin master --rebase (finish): returning to refs/heads/master
+[33m7cbb9eb[m HEAD@{43}: pull origin master --rebase (pick): Initial commit with vercel.json and existing project
+[33m4ab609a[m HEAD@{44}: pull origin master --rebase (start): checkout 4ab609a118b1a0b2b1a64afa7366b001af4f393c
+[33m41a2ede[m HEAD@{45}: commit (initial): Initial commit with vercel.json and existing project
