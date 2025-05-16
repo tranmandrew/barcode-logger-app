@@ -8,19 +8,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name:  Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
+      - name:  Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
 
-      - name: Install dependencies
-        run: npm install
-        working-directory: ./ # <- adjust if script is nested
+      - name:  Install all dependencies
+        run: npm ci
 
-      - name: Run Sellbrite sync script
+      - name:  Run sync script
         run: node scripts/sync-sellbrite.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
