@@ -10,6 +10,9 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          clean: true
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -20,9 +23,9 @@ jobs:
         run: npm install
 
       - name: Run Sellbrite sync script
+        run: node scripts/sync-sellbrite.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           SELLBRITE_API_KEY: ${{ secrets.SELLBRITE_API_KEY }}
           SELLBRITE_API_SECRET: ${{ secrets.SELLBRITE_API_SECRET }}
-        run: node scripts/sync-sellbrite.js
