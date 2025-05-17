@@ -20,9 +20,14 @@ async function syncImageURLs() {
 
   while (true) {
     console.log(`📦 Fetching page ${page} from Sellbrite...`);
-    const { data: products } = await sellbrite.get("/products", {
-      params: { page },
-    });
+    const response = await sellbrite.get("/products", { params: { page } });
+
+    if (!Array.isArray(response.data)) {
+      console.error("❌ Sellbrite returned unexpected format:", response.data);
+      throw new Error("Sellbrite API response was not an array");
+    }
+
+    const products = response.data;
 
     if (!products.length) break;
 
