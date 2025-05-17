@@ -24,4 +24,4 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           SELLBRITE_API_KEY: ${{ secrets.SELLBRITE_API_KEY }}
           SELLBRITE_API_SECRET: ${{ secrets.SELLBRITE_API_SECRET }}
-        run: node scripts/sync-sellbrite-images.mjs
+        run: node scripts/sync-sellbrite-images.js
