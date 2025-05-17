@@ -1,204 +1,276 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { format } from "date-fns";
-
-interface ScanLog {
-  id: number;
-  timestamp: string;
-  direction: string;
-  raw_sku: string;
-  items: {
-    title: string;
-    image_url: string;
-  } | null;
-}
-
-const users = ["Andrew", "Alice", "Bob"];
 
 export default function ScanPage() {
-  const [scans, setScans] = useState<ScanLog[]>([]);
-  const [mode, setMode] = useState<"in" | "out">("in");
   const [sku, setSku] = useState("");
-  const [user, setUser] = useState<string>(users[0]);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [direction, setDirection] = useState<"IN" | "OUT">("IN");
+  const [scans, setScans] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string>("");
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [selectedSession, setSelectedSession] = useState<string>("");
+  const [overdueItems, setOverdueItems] = useState<any[]>([]);
+  const [itemTitle, setItemTitle] = useState<string | null>(null);
+  const [itemImage, setItemImage] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const fetchScans = async () => {
-      const { data, error } = await supabase
-        .from("scan_logs")
-        .select("id, timestamp, direction, raw_sku, items(title, image_url)")
-        .order("timestamp", { ascending: false })
-        .limit(10);
-      if (error) {
-        console.error("Error fetching scans:", error);
-      } else if (data) {
-        setScans(data);
-        // Show image of the most recent scan (if available)
-        if (data.length > 0) {
-          const latest = data[0];
-          setImageUrl(latest.items?.image_url ?? null);
+    const fetchInitial = async () => {
+      const { data: userData } = await supabase.from("scanner_users").select("*");
+      setUsers(userData || []);
+      if (userData?.[0]) setSelectedUser(userData[0].id);
+
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: sessionData } = await supabase
+        .from("daily_sessions")
+        .select("*")
+        .order("date", { ascending: false });
+
+      setSessions(sessionData || []);
+      const todaySession = sessionData?.find((s) => s.date === today);
+
+      if (todaySession) {
+        setSelectedSession(todaySession.id);
+      } else {
+        const { data: newSession } = await supabase
+          .from("daily_sessions")
+          .insert([{ date: today }])
+          .select()
+          .single();
+        if (newSession) {
+          setSelectedSession(newSession.id);
+          setSessions([newSession, ...(sessionData || [])]);
         }
       }
+
+      fetchScans();
     };
-    fetchScans();
+
+    fetchInitial();
+    inputRef.current?.focus(); // Autofocus on load
   }, []);
 
-  const handleScan = async () => {
-    if (!sku) return;
-    // Find matching item by barcode (case-insensitive, partial match)
-    const { data: itemsData, error: itemError } = await supabase
-      .from("items")
+  const fetchScans = async () => {
+    const { data: rawScans, error } = await supabase
+      .from("scan_logs")
       .select("*")
-      .ilike("barcode", `%${sku}%`);
-    if (itemError) {
-      console.error("Error fetching item:", itemError);
+      .order("timestamp", { ascending: false })
+      .limit(10);
+
+    if (error) {
+      console.error("Fetch scans error:", error.message);
       return;
     }
-    const item = itemsData?.[0] ?? null;
-    // Insert new scan log entry
-    const { data: newEntries, error: insertError } = await supabase
-      .from("scan_logs")
-      .insert({
-        item_id: item ? item.id : null,
-        user_id: user,
-        direction: mode,
-        timestamp: new Date().toISOString(),
-        raw_sku: sku,
+
+    const enriched = await Promise.all(
+      (rawScans || []).map(async (scan) => {
+        const { data: item } = await supabase
+          .from("items")
+          .select("title, image_url")
+          .eq("sku", scan.sku)
+          .single();
+        return {
+          ...scan,
+          item_title: item?.title || null,
+          item_image: item?.image_url || null,
+        };
       })
-      .select("id, timestamp, direction, raw_sku, items(title, image_url)");
-    if (insertError) {
-      console.error("Error inserting scan:", insertError);
-    } else if (newEntries) {
-      const newEntry = newEntries[0];
-      // Update scan list (prepend new entry and limit to 10)
-      setScans((prev) => [newEntry, ...prev].slice(0, 10));
-      // Update image preview
-      setImageUrl(newEntry.items?.image_url ?? null);
+    );
+
+    setScans(enriched);
+    if (enriched[0]?.item_image) {
+      setItemImage(enriched[0].item_image);
     }
-    // Clear the input for the next scan
+  };
+
+  const handleScan = async () => {
+    if (!sku || !selectedUser || !selectedSession) return;
+
+    const { data: itemData } = await supabase
+      .from("items")
+      .select("title, image_url")
+      .eq("sku", sku)
+      .single();
+
+    setItemTitle(itemData?.title || null);
+    setItemImage(itemData?.image_url || null);
+
+    const { error } = await supabase.from("scan_logs").insert([
+      {
+        sku,
+        scan_type: direction.toLowerCase(),
+        user_id: selectedUser,
+        session_id: selectedSession,
+      },
+    ]);
+
+    if (error) {
+      console.error("Scan error:", error.message);
+      return;
+    }
+
     setSku("");
+    fetchScans();
+    inputRef.current?.focus(); // Autofocus again after scan
+  };
+
+  const handleCheckOverdue = async () => {
+    const { data, error } = await supabase.rpc("get_still_out_items");
+    if (error) {
+      console.error("Overdue error:", error.message);
+    } else {
+      setOverdueItems(data || []);
+    }
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: "2rem", padding: "1rem" }}>
-      {/* Left Panel: Scan form and recent scans list */}
-      <div style={{ flex: 1 }}>
-        <h3>Barcode Scanner</h3>
-        {/* User Selector */}
-        <div style={{ marginBottom: "0.5rem" }}>
-          <label htmlFor="userSelect" style={{ marginRight: "0.5rem" }}>User:</label>
-          <select
-            id="userSelect"
-            value={user}
-            onChange={(e) => setUser(e.target.value)}
-            style={{ padding: "0.25rem" }}
-          >
-            {users.map((u) => (
-              <option key={u} value={u}>
-                {u}
-              </option>
-            ))}
-          </select>
-        </div>
-        {/* Barcode Input */}
-        <div style={{ marginBottom: "0.5rem" }}>
-          <input
-            type="text"
-            placeholder="Enter SKU or scan"
-            value={sku}
-            onChange={(e) => setSku(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleScan();
-              }
-            }}
-            style={{ padding: "0.5rem", width: "100%", maxWidth: "250px" }}
-          />
-        </div>
-        {/* IN/OUT Toggle */}
-        <div style={{ marginBottom: "0.5rem" }}>
-          <span style={{ marginRight: "0.5rem" }}>Mode:</span>
-          <button
-            onClick={() => setMode("in")}
-            style={{
-              padding: "0.25rem 0.5rem",
-              marginRight: "0.5rem",
-              backgroundColor: mode === "in" ? "#007bff" : "#e0e0e0",
-              color: mode === "in" ? "#fff" : "#000",
-              border: "none",
-              borderRadius: "4px",
-            }}
-          >
-            IN
-          </button>
-          <button
-            onClick={() => setMode("out")}
-            style={{
-              padding: "0.25rem 0.5rem",
-              backgroundColor: mode === "out" ? "#007bff" : "#e0e0e0",
-              color: mode === "out" ? "#fff" : "#000",
-              border: "none",
-              borderRadius: "4px",
-            }}
-          >
-            OUT
-          </button>
-        </div>
-        {/* Scan Button */}
-        <div style={{ marginBottom: "1rem" }}>
-          <button
-            onClick={handleScan}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#007bff",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-            }}
-          >
-            Scan
-          </button>
-        </div>
-        {/* Recent Scans List */}
-        <h4>Last 10 Scans</h4>
-        <ul style={{ listStyleType: "none", paddingLeft: 0 }}>
-          {scans.map((scan) => {
-            const displayName = scan.items ? scan.items.title : scan.raw_sku;
-            return (
-              <li key={scan.id} style={{ marginBottom: "0.5rem", display: "flex", alignItems: "center" }}>
-                {/* Thumbnail Image if available */}
-                {scan.items?.image_url ? (
-                  <img
-                    src={scan.items.image_url}
-                    alt={scan.items.title || "Item image"}
-                    style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "4px", marginRight: "0.5rem" }}
-                  />
-                ) : (
-                  // Placeholder to align text if no image
-                  <div style={{ width: "40px", height: "40px", marginRight: "0.5rem" }} />
-                )}
-                {/* Scan info text */}
-                <span>
-                  <strong>{displayName}</strong> — <em>{scan.direction.toUpperCase()}</em> @{" "}
-                  {format(new Date(scan.timestamp), "MMM d, yyyy h:mm aa")}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+    <div style={{ padding: 24 }}>
+      <h2 style={{ fontSize: 20, fontWeight: "bold" }}>📦 Barcode Scanner</h2>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input
+          ref={inputRef}
+          type="text"
+          placeholder="Enter SKU or scan"
+          value={sku}
+          onChange={(e) => setSku(e.target.value)}
+        />
+        <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
+          {users.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.name}
+            </option>
+          ))}
+        </select>
+        <select value={selectedSession} onChange={(e) => setSelectedSession(e.target.value)}>
+          {sessions.map((s) => (
+            <option key={s.id} value={s.id}>
+              Session {s.date}
+            </option>
+          ))}
+        </select>
       </div>
-      {/* Right Panel: Large image preview for the latest scanned item */}
-      <div>
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt="Item Preview"
-            style={{ maxWidth: "300px", borderRadius: "8px", border: "1px solid #ccc" }}
-          />
-        ) : (
-          <div style={{ width: "300px", height: "300px", border: "1px solid #ccc", borderRadius: "8px" }} />
-        )}
+
+      <div style={{ display: "flex", alignItems: "center", marginTop: 10, gap: "12px" }}>
+        <span><strong>Mode:</strong></span>
+        <button
+          onClick={() => setDirection("IN")}
+          style={{
+            backgroundColor: direction === "IN" ? "#4CAF50" : "#e0e0e0",
+            color: direction === "IN" ? "white" : "black",
+            padding: "6px 12px",
+            border: "1px solid #ccc",
+            borderRadius: "6px",
+            fontWeight: direction === "IN" ? "bold" : "normal",
+          }}
+        >
+          IN
+        </button>
+        <button
+          onClick={() => setDirection("OUT")}
+          style={{
+            backgroundColor: direction === "OUT" ? "#f44336" : "#e0e0e0",
+            color: direction === "OUT" ? "white" : "black",
+            padding: "6px 12px",
+            border: "1px solid #ccc",
+            borderRadius: "6px",
+            fontWeight: direction === "OUT" ? "bold" : "normal",
+          }}
+        >
+          OUT
+        </button>
+      </div>
+
+      <button
+        onClick={handleScan}
+        style={{
+          marginTop: 8,
+          backgroundColor: "#2196F3",
+          color: "white",
+          padding: "10px 24px",
+          border: "none",
+          borderRadius: "4px",
+          fontWeight: "bold",
+        }}
+      >
+        Scan
+      </button>
+
+      <div style={{ marginTop: 10 }}>
+        <button onClick={handleCheckOverdue}>Check Overdue Now</button>
+        <button
+          onClick={() => {
+            const csv = overdueItems
+              .map((item) =>
+                `${item.sku},"${item.title}",${item.user_name},${item.scanned_at},${item.location}`
+              )
+              .join("\n");
+            const blob = new Blob(["Barcode,Item Name,User,Timestamp,Location\n" + csv], {
+              type: "text/csv",
+            });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "overdue_items.csv";
+            a.click();
+            window.URL.revokeObjectURL(url);
+          }}
+        >
+          Download CSV
+        </button>
+        <button onClick={() => window.print()}>Print</button>
+        <button onClick={() => (window.location.href = "/dashboard")}>Dashboard</button>
+        <button onClick={() => (window.location.href = "/sync")}>Manual Sync</button>
+      </div>
+
+      {sku && itemTitle && (
+        <div style={{ marginTop: 8, fontSize: 12, color: "#555" }}>
+          <strong>Preview:</strong> {sku} — {itemTitle}
+        </div>
+      )}
+
+      {overdueItems.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <h4>Overdue Items</h4>
+          <ul>
+            {overdueItems.map((item, i) => (
+              <li key={i}>
+                #{item.sku} — {item.title} — Last scanned by {item.user_name} at{" "}
+                {new Date(item.scanned_at).toLocaleString()} in {item.location}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <h4 style={{ marginTop: 20 }}>Last 10 Scans</h4>
+      <div style={{ display: "flex", gap: "40px" }}>
+        <ul style={{ flex: 1 }}>
+          {scans.map((s, i) => (
+            <li key={i}>
+              #{s.sku} —{" "}
+              <span style={{ color: s.scan_type === "in" ? "#4CAF50" : "#f44336" }}>
+                {s.scan_type.toUpperCase()}
+              </span>{" "}
+              @ {new Date(s.timestamp).toLocaleString()}{" "}
+              {s.item_title ? `— ${s.item_title}` : ""}
+            </li>
+          ))}
+        </ul>
+        <div style={{ flex: 1 }}>
+          {itemImage && (
+            <img
+              src={itemImage}
+              alt="Last scanned item"
+              style={{
+                maxWidth: "100%",
+                maxHeight: 300,
+                borderRadius: 8,
+                border: "1px solid #ccc",
+              }}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
