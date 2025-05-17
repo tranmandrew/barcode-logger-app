@@ -1,16 +1,16 @@
-import axios from "axios";
-import { createClient } from "@supabase/supabase-js";
+const axios = require("axios");
+const { createClient } = require("@supabase/supabase-js");
 
 const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_KEY!
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
 );
 
 const sellbrite = axios.create({
   baseURL: "https://app.sellbrite.com/api",
   auth: {
-    username: process.env.SELLBRITE_API_KEY!,
-    password: process.env.SELLBRITE_API_SECRET!,
+    username: process.env.SELLBRITE_API_KEY,
+    password: process.env.SELLBRITE_API_SECRET,
   },
 });
 
