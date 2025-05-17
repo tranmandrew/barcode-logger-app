@@ -1,66 +1,69 @@
-const axios = require("axios");
-const { createClient } = require("@supabase/supabase-js");
+import axios from "axios";
+import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-const sellbrite = axios.create({
-  baseURL: "https://api.sellbrite.com/v1",
-  auth: {
-    username: process.env.SELLBRITE_API_KEY,
-    password: process.env.SELLBRITE_API_SECRET,
-  },
-});
+const apiKey = process.env.SELLBRITE_API_KEY;
+const apiSecret = process.env.SELLBRITE_API_SECRET;
 
-const BATCH_SIZE = 100;
+const BASE_URL = "https://api.sellbrite.com/v1/";
+const PAGE_LIMIT = 100;
 
-async function syncImageURLs() {
-  console.log("🔄 Starting Sellbrite → Supabase image sync...");
+const fetchSellbriteProducts = async (page) => {
+  const res = await axios.get(`${BASE_URL}products`, {
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString("base64")}`,
+      "Content-Type": "application/json",
+    },
+    params: {
+      limit: PAGE_LIMIT,
+      page,
+    },
+  });
+  return res.data;
+};
+
+const runSync = async () => {
+  console.log("\u{1F504} Starting Sellbrite \u2192 Supabase image sync...");
+
   let page = 1;
   let totalUpdated = 0;
 
   while (true) {
-    console.log(`📦 Fetching page ${page} from Sellbrite...`);
-    const response = await sellbrite.get("/products", { params: { page } });
+    console.log(`\u{1F4E6} Fetching page ${page} from Sellbrite...`);
 
-    if (!Array.isArray(response.data)) {
-      console.error("❌ Sellbrite returned unexpected format:", response.data);
-      throw new Error("Sellbrite API response was not an array");
+    try {
+      const products = await fetchSellbriteProducts(page);
+
+      if (!Array.isArray(products) || products.length === 0) break;
+
+      const updates = products
+        .filter((p) => p.sku && p.main_image_url)
+        .map((p) => ({ sku: p.sku, image_url: p.main_image_url }));
+
+      if (updates.length > 0) {
+        const { error } = await supabase.from("items").upsert(updates, {
+          onConflict: ["sku"],
+        });
+        if (error) {
+          console.error("❌ Supabase upsert error:", error.message);
+          break;
+        }
+      }
+
+      console.log(`🛠 Updating ${updates.length} items from page ${page}...`);
+      console.log(`✅ Page ${page} processed.`);
+      totalUpdated += updates.length;
+      page++;
+    } catch (err) {
+      console.error("❌ Sync failed:", err.response?.data || err.message);
+      break;
     }
-
-    const products = response.data;
-
-    if (!products.length) break;
-
-    const formattedItems = products
-      .filter((p) => p.sku && p.main_image_url)
-      .map((p) => ({
-        sku: p.sku,
-        image_url: p.main_image_url,
-      }));
-
-    console.log(`🛠 Updating ${formattedItems.length} items from page ${page}...`);
-
-    const updatePromises = formattedItems.map(async ({ sku, image_url }) => {
-      const { error } = await supabase
-        .from("items")
-        .update({ image_url })
-        .eq("sku", sku)
-        .is("image_url", null);
-      if (!error) totalUpdated++;
-    });
-
-    for (let i = 0; i < updatePromises.length; i += BATCH_SIZE) {
-      await Promise.allSettled(updatePromises.slice(i, i + BATCH_SIZE));
-    }
-
-    console.log(`✅ Page ${page} processed.`);
-    page++;
   }
 
-  console.log(`🎉 Sync complete — ${totalUpdated} items updated with image URLs.`);
-}
+  console.log(`\u{1F389} Sync complete — ${totalUpdated} items updated with image URLs.`);
+};
 
-syncImageURLs().catch((err) => {
-  console.error("❌ Sync failed:", err.message);
-  process.exit(1);
-});
+runSync();
