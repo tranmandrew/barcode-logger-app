@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import supabase from "../../lib/supabaseClient";
+import supabase from "../lib/supabaseClient"; // fixed relative path
 import { format } from "date-fns";
 
 const ScanPage = () => {
