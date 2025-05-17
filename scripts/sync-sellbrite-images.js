@@ -4,7 +4,7 @@ const { createClient } = require("@supabase/supabase-js");
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 const sellbrite = axios.create({
-  baseURL: "https://app.sellbrite.com/api",
+  baseURL: "https://api.sellbrite.com/v1",
   auth: {
     username: process.env.SELLBRITE_API_KEY,
     password: process.env.SELLBRITE_API_SECRET,
