@@ -52,7 +52,7 @@ export default function ScanPage() {
   const fetchScans = async () => {
     const { data } = await supabase
       .from("scan_logs")
-      .select("*, items(title)")
+      .select("*, items(title, image_url)")
       .order("timestamp", { ascending: false })
       .limit(10);
     setScans(data || []);
@@ -218,17 +218,31 @@ export default function ScanPage() {
       )}
 
       <h4 style={{ marginTop: 20 }}>Last 10 Scans</h4>
-      <ul>
-        {scans.map((s, i) => (
-          <li key={i}>
-            #{s.sku} —{" "}
-            <span style={{ color: s.scan_type === "in" ? "#4CAF50" : "#f44336" }}>
-              {s.scan_type.toUpperCase()}
-            </span>{" "}
-            @ {new Date(s.timestamp).toLocaleString()} {s.items?.title ? `— ${s.items.title}` : ""}
-          </li>
-        ))}
-      </ul>
+      <div style={{ display: "flex", gap: "40px" }}>
+        <ul style={{ flex: 1 }}>
+          {scans.map((s, i) => (
+            <li key={i}>
+              #{s.sku} —{" "}
+              <span style={{ color: s.scan_type === "in" ? "#4CAF50" : "#f44336" }}>
+                {s.scan_type.toUpperCase()}
+              </span>{" "}
+              @ {new Date(s.timestamp).toLocaleString()} {s.items?.title ? `— ${s.items.title}` : ""}
+            </li>
+          ))}
+        </ul>
+
+        <div style={{ flex: 1 }}>
+          {scans[0]?.items?.image_url && (
+            <div>
+              <img
+                src={scans[0].items.image_url}
+                alt={scans[0].items.title || "Item image"}
+                style={{ maxWidth: "100%", maxHeight: 300, borderRadius: 8, border: "1px solid #ccc" }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
