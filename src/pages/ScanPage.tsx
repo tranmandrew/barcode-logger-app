@@ -19,14 +19,12 @@ export default function ScanPage() {
       if (userData?.[0]) setSelectedUser(userData[0].id);
 
       const today = new Date().toISOString().slice(0, 10);
-
       const { data: sessionData } = await supabase
         .from("daily_sessions")
         .select("*")
         .order("date", { ascending: false });
 
       setSessions(sessionData || []);
-
       const todaySession = sessionData?.find((s) => s.date === today);
 
       if (todaySession) {
@@ -226,7 +224,8 @@ export default function ScanPage() {
               <span style={{ color: s.scan_type === "in" ? "#4CAF50" : "#f44336" }}>
                 {s.scan_type.toUpperCase()}
               </span>{" "}
-              @ {new Date(s.timestamp).toLocaleString()} {s.items?.title ? `— ${s.items.title}` : ""}
+              @ {new Date(s.timestamp).toLocaleString()}{" "}
+              {s.items?.title ? `— ${s.items.title}` : ""}
             </li>
           ))}
         </ul>
