@@ -229,16 +229,18 @@ export default function ScanPage() {
             </li>
           ))}
         </ul>
-
         <div style={{ flex: 1 }}>
           {scans[0]?.items?.image_url && (
-            <div>
-              <img
-                src={scans[0].items.image_url}
-                alt={scans[0].items.title || "Item image"}
-                style={{ maxWidth: "100%", maxHeight: 300, borderRadius: 8, border: "1px solid #ccc" }}
-              />
-            </div>
+            <img
+              src={scans[0].items.image_url}
+              alt="Last scanned item"
+              style={{
+                maxWidth: "100%",
+                maxHeight: 300,
+                borderRadius: 8,
+                border: "1px solid #ccc",
+              }}
+            />
           )}
         </div>
       </div>
