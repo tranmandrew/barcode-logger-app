@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useEffect, useState } from 'react';
 import { supabase } from "@/lib/supabase";
 import { format } from 'date-fns';
@@ -149,3 +150,119 @@ const ScanPage = () => {
 };
 
 export default ScanPage;
+=======
+import React, { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { format } from 'date-fns'
+
+type ScanLog = {
+  timestamp: string
+  direction: 'IN' | 'OUT'
+  raw_sku: string
+  items?: {
+    name: string | null
+    image_url: string | null
+  }
+}
+
+export default function ScanPage() {
+  const [scans, setScans] = useState<ScanLog[]>([])
+  const [itemImageUrl, setItemImageUrl] = useState<string | null>(null)
+  const [latestItemName, setLatestItemName] = useState<string | null>(null)
+
+  const fetchRecentScans = async () => {
+    const { data, error } = await supabase
+      .from('scan_logs')
+      .select('timestamp, direction, raw_sku, items(name, image_url)')
+      .order('timestamp', { ascending: false })
+      .limit(10)
+
+    if (error) {
+      console.error('Error fetching scans:', error)
+      return
+    }
+
+    setScans(data || [])
+
+    // Set preview to most recent scan's item (if available)
+    if (data && data.length > 0 && data[0].items?.image_url) {
+      setItemImageUrl(data[0].items.image_url)
+      setLatestItemName(data[0].items.name || null)
+    } else {
+      setItemImageUrl(null)
+      setLatestItemName(null)
+    }
+  }
+
+  useEffect(() => {
+    fetchRecentScans()
+  }, [])
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      {/* Scan List */}
+      <div style={{ flex: 1 }}>
+        <h2>Last 10 Scans</h2>
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {scans.map((s, idx) => (
+            <li
+              key={idx}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: '0.5rem',
+              }}
+            >
+              {s.items?.image_url && (
+                <img
+                  src={s.items.image_url}
+                  alt={s.items.name || 'Item image'}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    objectFit: 'cover',
+                    marginRight: '10px',
+                    borderRadius: '4px',
+                  }}
+                />
+              )}
+              <span>
+                {s.items?.name || s.raw_sku} —{' '}
+                <span
+                  style={{
+                    color: s.direction === 'IN' ? 'green' : 'red',
+                    fontWeight: 500,
+                  }}
+                >
+                  {s.direction}
+                </span>{' '}
+                @ {format(new Date(s.timestamp), 'Pp')}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Preview Panel */}
+      {itemImageUrl && (
+        <div
+          style={{
+            marginLeft: '2rem',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            maxWidth: '300px',
+          }}
+        >
+          <img
+            src={itemImageUrl}
+            alt="Item Preview"
+            style={{ maxWidth: '100%', borderRadius: '8px', marginBottom: '1rem' }}
+          />
+          {latestItemName && <h4>{latestItemName}</h4>}
+        </div>
+      )}
+    </div>
+  )
+}
+>>>>>>> 7c2ce60 (Fix: Render item image next to name on ScanPage and add supabase client)
