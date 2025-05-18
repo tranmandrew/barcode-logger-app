@@ -3,20 +3,17 @@ name: Manual Inventory Sync
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 3 * * *'  # runs daily at 3 AM UTC
+    - cron: '0 3 * * *' # Optional: daily at 3AM UTC
 
 jobs:
   sync:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo (force fresh)
+      - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          clean: true
-          fetch-depth: 0
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
@@ -24,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Sellbrite sync script
+      - name: Run Sellbrite inventory sync
         run: node scripts/sync-sellbrite.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
