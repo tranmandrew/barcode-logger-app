@@ -28,11 +28,12 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
 
-      - name: Run image sync
+          -name: Run image sync
         run: node scripts/sync-sellbrite-images.mjs
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-    SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+
 
       - name: Merge staging into items
         run: node scripts/merge-staging-to-items.js
