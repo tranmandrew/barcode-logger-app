@@ -1,5 +1,6 @@
 // scripts/supabaseClient.mjs
 import { createClient } from '@supabase/supabase-js';
+import supabase from './supabaseClient';  // Use relative path for local imports
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
