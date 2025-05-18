@@ -1,82 +1,58 @@
-// scripts/sync-sellbrite.js
-require('dotenv').config();
-
 const axios = require('axios');
+require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
-
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const SELLBRITE_API_KEY = process.env.SELLBRITE_API_KEY;
-const SELLBRITE_API_SECRET = process.env.SELLBRITE_API_SECRET;
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 const PAGE_SIZE = 100;
 
 (async () => {
   try {
-    let page = 1;
+    console.log('🚀 Starting Sellbrite product fetch...');
+
     let allProducts = [];
-    let fetched = [];
+    let page = 1;
 
-    console.log('🔄 Starting Sellbrite product fetch...');
-
-    do {
+    while (true) {
       const response = await axios.get('https://api.sellbrite.com/v1/products', {
         auth: {
-          username: SELLBRITE_API_KEY,
-          password: SELLBRITE_API_SECRET,
+          username: process.env.SELLBRITE_API_KEY,
+          password: process.env.SELLBRITE_API_SECRET
         },
         params: {
           page,
-          limit: PAGE_SIZE,
-        },
+          limit: PAGE_SIZE
+        }
       });
 
-      fetched = response.data;
-      allProducts.push(...fetched);
-      console.log(`✅ Page ${page} fetched: ${fetched.length} items`);
+      const products = response.data;
+      if (!products.length) break;
+
+      console.log(`✅ Page ${page} fetched: ${products.length} items`);
+      allProducts = allProducts.concat(products);
+      if (products.length < PAGE_SIZE) break;
+
       page++;
-    } while (fetched.length === PAGE_SIZE);
+    }
 
     console.log(`📦 Total products fetched: ${allProducts.length}`);
 
-    const items = [];
-    const seenSkus = new Set();
+    const transformed = allProducts.map(p => ({
+      sku: p.sku,
+      barcode: p.upc || null,
+      title: p.title || '',
+      bin_location: p.bin_location || 'unspecified',
+      cost: 0,
+      image_url: null
+    }));
 
-    for (const product of allProducts) {
-      const sku = product.sku?.trim();
-      if (!sku || seenSkus.has(sku)) continue;
-      seenSkus.add(sku);
+    // Upload to staging table
+    const { error } = await supabase.from('items_staging').upsert(transformed, { onConflict: 'sku' });
+    if (error) throw error;
 
-      items.push({
-        sku,
-        title: product.name || null,
-        barcode: product.upc || product.ean || sku,
-        cost: product.cost ? parseFloat(product.cost) : 0,
-        bin_location: product.bin_location || 'unassigned',
-        image_url:
-          product.primary_image_url ||
-          (product.image_list?.includes('|')
-            ? product.image_list.split('|')[0].trim()
-            : product.image_list?.trim() || null),
-      });
-    }
-
-    console.log(`📤 Syncing ${items.length} items to Supabase...`);
-
-    // You can use upsert or delete + insert depending on your preference
-    await supabase.from('items_staging').delete().neq('sku', ''); // clear old
-
-    const { error } = await supabase.from('items_staging').insert(items);
-
-    if (error) {
-      console.error('❌ Supabase insert error:', error.message);
-      process.exit(1);
-    }
-
-    console.log(`✅ Successfully synced ${items.length} items to Supabase.`);
+    console.log(`📤 Uploaded ${transformed.length} items to items_staging`);
   } catch (err) {
     console.error('❌ Sync failed:', err.message);
     process.exit(1);
