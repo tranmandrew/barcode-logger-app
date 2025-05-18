@@ -19,24 +19,26 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run Sellbrite inventory sync
-        run: node scripts/sync-sellbrite.js
         env:
           SELLBRITE_API_KEY: ${{ secrets.SELLBRITE_API_KEY }}
           SELLBRITE_API_SECRET: ${{ secrets.SELLBRITE_API_SECRET }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        run: node scripts/sync-sellbrite.js
 
       - name: Run image sync
-        run: node scripts/sync-sellbrite-images.mjs
         env:
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SELLBRITE_API_KEY: ${{ secrets.SELLBRITE_API_KEY }}
+          SELLBRITE_API_SECRET: ${{ secrets.SELLBRITE_API_SECRET }}
+        run: node scripts/sync-sellbrite-images.mjs
 
       - name: Merge staging into items
-        run: node scripts/merge-staging-to-items.js
         env:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        run: node scripts/merge-staging-to-items.js
