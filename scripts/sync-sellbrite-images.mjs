@@ -2,11 +2,13 @@
 import axios from "axios";
 import { createClient } from "@supabase/supabase-js";
 import "dotenv/config";
+import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+  process.env.SUPABASE_SERVICE_KEY
+)
+;
 
 const SELLBRITE_KEY = process.env.SELLBRITE_API_KEY;
 const SELLBRITE_SECRET = process.env.SELLBRITE_API_SECRET;
