@@ -56,3 +56,4 @@ if (error) {
 }
 
 console.log('Upload to Supabase complete.');
+console.log('Upload to Supabase complete.');
