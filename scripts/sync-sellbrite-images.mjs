@@ -1,90 +1,71 @@
-// scripts/sync-sellbrite-images.mjs
-import axios from "axios";
-import { createClient } from "@supabase/supabase-js";
-import "dotenv/config";
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
+import axios from 'axios';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-)
-;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-const SELLBRITE_KEY = process.env.SELLBRITE_API_KEY;
-const SELLBRITE_SECRET = process.env.SELLBRITE_API_SECRET;
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_KEY environment variables.");
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
 const PAGE_SIZE = 100;
+let page = 1;
+let totalUpdated = 0;
 
-let updatedTotal = 0;
+console.log("🚀 Starting image sync...");
 
-console.log("🔄 Starting Sellbrite → Supabase image sync...");
+while (true) {
+  console.log(`📄 Fetching page ${page}`);
 
-for (let page = 1; page < 999; page++) {
-  console.log(`📦 Fetching page ${page} from Sellbrite...`);
+  const { data: items, error } = await supabase
+    .from("items")
+    .select("sku")
+    .is("image_url", null)
+    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
-  let products = [];
-  try {
-    const response = await axios.get("https://api.sellbrite.com/v1/products", {
-      params: { page, limit: PAGE_SIZE },
-      auth: {
-        username: SELLBRITE_KEY,
-        password: SELLBRITE_SECRET,
-      },
-    });
+  if (error) {
+    console.error("❌ Supabase fetch error:", error.message);
+    process.exit(1);
+  }
 
-    if (!Array.isArray(response.data)) {
-      console.error("❌ Sellbrite returned unexpected format:", response.data);
-      break;
-    }
-
-    products = response.data;
-    if (products.length === 0) break;
-  } catch (err) {
-    console.error(`❌ Error fetching page ${page}:`, err.message);
+  if (!items.length) {
+    console.log("✅ No more items needing image URLs.");
     break;
   }
 
-  const updates = [];
-
-  for (const product of products) {
-    const sku = product.sku?.trim();
-    if (!sku) continue;
-
-    let imageUrl = product.primary_image_url?.trim();
-
-    // Fallback to image_list first image
-    if (!imageUrl && product.image_list?.includes("http")) {
-      imageUrl = product.image_list.split("|")[0]?.trim();
-    }
-
-    if (!imageUrl) {
-      console.warn(`⚠️ No image for SKU ${sku}`);
-      continue;
-    }
-
-    updates.push({ sku, image_url: imageUrl });
-    console.log(`✅ Found image for SKU ${sku}`);
-  }
-
-  if (updates.length > 0) {
+  for (const item of items) {
     try {
-      const { error } = await supabase.from("items").upsert(updates, {
-        onConflict: "sku",
+      const res = await axios.get(`https://api.sellbrite.com/v1/products/${item.sku}`, {
+        auth: {
+          username: process.env.SELLBRITE_API_KEY,
+          password: process.env.SELLBRITE_API_SECRET,
+        },
       });
 
-      if (error) {
-        console.error(`❌ Failed to update Supabase on page ${page}:`, error.message);
-        break;
-      }
+      const product = res.data;
+      const imageUrl = product.image_url || null;
 
-      console.log(`🛠 Updated ${updates.length} SKUs on page ${page}`);
-      updatedTotal += updates.length;
+      if (imageUrl) {
+        const { error: updateError } = await supabase
+          .from("items")
+          .update({ image_url: imageUrl })
+          .eq("sku", item.sku);
+
+        if (updateError) {
+          console.error(`❌ Failed to update image for ${item.sku}:`, updateError.message);
+        } else {
+          console.log(`✅ Updated ${item.sku}`);
+          totalUpdated++;
+        }
+      }
     } catch (err) {
-      console.error(`❌ Supabase error on page ${page}:`, err.message);
-      break;
+      console.error(`❌ Error fetching Sellbrite product for ${item.sku}:`, err.response?.data || err.message);
     }
-  } else {
-    console.log(`⚠️ No updates on page ${page}`);
   }
+
+  page++;
 }
 
-console.log(`🎉 Sync complete — ${updatedTotal} items updated with image URLs.`);
+console.log(`🎉 Finished syncing images. Total updated: ${totalUpdated}`);
