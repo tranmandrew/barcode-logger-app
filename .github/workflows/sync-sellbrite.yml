@@ -22,7 +22,7 @@ jobs:
         run: npm install
 
       - name: Run Sellbrite inventory sync
-        run: node scripts/sync-sellbrite.js
+        run: node scripts/sync-sellbrite.mjs
         env:
           SELLBRITE_API_KEY: ${{ secrets.SELLBRITE_API_KEY }}
           SELLBRITE_API_SECRET: ${{ secrets.SELLBRITE_API_SECRET }}
