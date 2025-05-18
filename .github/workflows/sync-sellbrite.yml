@@ -2,7 +2,8 @@ name: Sync Sellbrite Inventory
 
 on:
   workflow_dispatch:
-
+  schedule:
+    - cron: '0 3 * * *' #3AM UTC 9PM CST
 jobs:
   sync-inventory:
     runs-on: ubuntu-latest
