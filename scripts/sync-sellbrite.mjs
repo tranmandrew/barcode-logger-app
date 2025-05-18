@@ -52,7 +52,6 @@ async function fetchAllProducts() {
     title: p.name || '',
     bin_location: p.bin_location || 'unspecified',
     price: p.price || 0,
-    cost: p.cost || 0,
     image_url: p.image_list?.split('|')[0] || null,
   }));
 
