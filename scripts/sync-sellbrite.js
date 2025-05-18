@@ -42,10 +42,10 @@ const PAGE_SIZE = 100;
     const transformed = allProducts.map(p => ({
       sku: p.sku,
       barcode: p.upc || null,
-      title: p.title || '',
+      title: p.name || '',
       bin_location: p.bin_location || 'unspecified',
-      cost: 0,
-      image_url: null
+      cost: p.cost || 0,
+      image_url: p.image_list?.split('|')[0] || null
     }));
 
     // Upload to staging table
