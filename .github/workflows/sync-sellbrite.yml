@@ -3,7 +3,8 @@ name: Sync Sellbrite Inventory
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 3 * * *' #3AM UTC 9PM CST
+    - cron: '0 3 * * *' # 9PM CST (3AM UTC)
+
 jobs:
   sync-inventory:
     runs-on: ubuntu-latest
@@ -28,12 +29,11 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
 
-          -name: Run image sync
+      - name: Run image sync
         run: node scripts/sync-sellbrite-images.mjs
         env:
-        SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
 
       - name: Merge staging into items
         run: node scripts/merge-staging-to-items.js
