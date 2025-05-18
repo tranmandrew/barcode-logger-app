@@ -15,6 +15,20 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
+async function fetchInventory(sku) {
+  try {
+    const res = await fetch(`https://api.sellbrite.com/v1/inventory/${sku}`, { headers });
+    if (!res.ok) return { barcode: null, bin_location: null };
+    const data = await res.json();
+    return {
+      barcode: data.barcode || null,
+      bin_location: data.bin_location || 'unspecified',
+    };
+  } catch {
+    return { barcode: null, bin_location: null };
+  }
+}
+
 let page = 1;
 let fetched = 0;
 let allProducts = [];
@@ -35,14 +49,19 @@ while (true) {
 
 console.log(`Fetched total ${fetched} products`);
 
-const mapped = allProducts.map((p) => ({
-  sku: p.sku,
-  title: p.name,
-  price: p.price || 0,
-  barcode: p.barcode || null,
-  bin_location: p.bin_location || 'unspecified',
-  image_url: p.image_list?.split('|')[0] || null,
-}));
+const mapped = [];
+
+for (const p of allProducts) {
+  const inv = await fetchInventory(p.sku);
+  mapped.push({
+    sku: p.sku,
+    title: p.name,
+    price: p.price || 0,
+    barcode: inv.barcode,
+    bin_location: inv.bin_location,
+    image_url: p.image_list?.split('|')[0] || null,
+  });
+}
 
 console.log('Uploading to Supabase...');
 
@@ -55,5 +74,4 @@ if (error) {
   process.exit(1);
 }
 
-console.log('Upload to Supabase complete.');
 console.log('Upload to Supabase complete.');
