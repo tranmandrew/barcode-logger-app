@@ -81,32 +81,34 @@ export default function ScanPage() {
   };
 
   const handleScan = async () => {
-    if (!sku || !selectedUser || !selectedSession) return;
+  if (!sku || !selectedUser || !selectedSession) return;
 
-    const { data: itemData } = await supabase
-      .from("items")
-      .select("title, image_url")
-      .eq("sku", sku)
-      .single();
+  const currentSku = sku.trim(); // capture before clearing
 
-    setItemTitle(itemData?.title || null);
-    setItemImage(itemData?.image_url || null);
+  const { data: itemData } = await supabase
+    .from("items")
+    .select("title, image_url")
+    .eq("sku", currentSku)
+    .single();
 
-    const { error } = await supabase.from("scan_logs").insert([
-      {
-        sku,
-        scan_type: direction.toLowerCase(),
-        user_id: selectedUser,
-        session_id: selectedSession,
-      },
-    ]);
+  setItemTitle(itemData?.title || null);
+  setItemImage(itemData?.image_url || null);
 
-    if (error) return console.error("Scan error:", error.message);
+  const { error } = await supabase.from("scan_logs").insert([
+    {
+      sku: currentSku,
+      scan_type: direction.toLowerCase(),
+      user_id: selectedUser,
+      session_id: selectedSession,
+    },
+  ]);
 
-    setSku("");
-    fetchScans();
-    inputRef.current?.focus();
-  };
+  if (error) return console.error("Scan error:", error.message);
+
+  setSku(""); // Clear input
+  fetchScans();
+  requestAnimationFrame(() => inputRef.current?.focus()); // Ensure refocus
+};
 
   const handleCheckOverdue = async () => {
     const { data, error } = await supabase.rpc("get_still_out_items");
