@@ -6,22 +6,14 @@ const ManualSync = () => {
   const triggerSync = async () => {
     setStatus('loading');
     try {
-      const res = await fetch('https://api.github.com/repos/tranmandrew/barcode-logger-app/actions/workflows/sync-sellbrite.yml/dispatches', {
+      const res = await fetch('/api/trigger-sync', {
         method: 'POST',
-        headers: {
-          'Accept': 'application/vnd.github+json',
-          'Authorization': `Bearer ${process.env.REACT_APP_GITHUB_PAT}`,
-          'X-GitHub-Api-Version': '2022-11-28',
-        },
-        body: JSON.stringify({
-          ref: 'master'
-        })
       });
 
       if (res.ok) {
         setStatus('success');
       } else {
-        throw new Error('Failed to trigger workflow');
+        throw new Error('Failed to trigger sync');
       }
     } catch (err) {
       setStatus('error');
