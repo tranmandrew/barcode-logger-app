@@ -28,7 +28,6 @@ export default function ScanPage() {
 
       setSessions(sessionData || []);
       const todaySession = sessionData?.find((s) => s.date === today);
-
       if (todaySession) {
         setSelectedSession(todaySession.id);
       } else {
@@ -47,7 +46,7 @@ export default function ScanPage() {
     };
 
     fetchInitial();
-    inputRef.current?.focus(); // Autofocus on load
+    inputRef.current?.focus();
   }, []);
 
   const fetchScans = async () => {
@@ -57,10 +56,7 @@ export default function ScanPage() {
       .order("timestamp", { ascending: false })
       .limit(10);
 
-    if (error) {
-      console.error("Fetch scans error:", error.message);
-      return;
-    }
+    if (error) return console.error("Fetch scans error:", error.message);
 
     const enriched = await Promise.all(
       (rawScans || []).map(async (scan) => {
@@ -78,9 +74,7 @@ export default function ScanPage() {
     );
 
     setScans(enriched);
-    if (enriched[0]?.item_image) {
-      setItemImage(enriched[0].item_image);
-    }
+    if (enriched[0]?.item_image) setItemImage(enriched[0].item_image);
   };
 
   const handleScan = async () => {
@@ -104,23 +98,17 @@ export default function ScanPage() {
       },
     ]);
 
-    if (error) {
-      console.error("Scan error:", error.message);
-      return;
-    }
+    if (error) return console.error("Scan error:", error.message);
 
     setSku("");
     fetchScans();
-    inputRef.current?.focus(); // Autofocus again after scan
+    inputRef.current?.focus();
   };
 
   const handleCheckOverdue = async () => {
     const { data, error } = await supabase.rpc("get_still_out_items");
-    if (error) {
-      console.error("Overdue error:", error.message);
-    } else {
-      setOverdueItems(data || []);
-    }
+    if (error) console.error("Overdue error:", error.message);
+    else setOverdueItems(data || []);
   };
 
   return (
@@ -137,16 +125,12 @@ export default function ScanPage() {
         />
         <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
           {users.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name}
-            </option>
+            <option key={u.id} value={u.id}>{u.name}</option>
           ))}
         </select>
         <select value={selectedSession} onChange={(e) => setSelectedSession(e.target.value)}>
           {sessions.map((s) => (
-            <option key={s.id} value={s.id}>
-              Session {s.date}
-            </option>
+            <option key={s.id} value={s.id}>Session {s.date}</option>
           ))}
         </select>
       </div>
@@ -163,9 +147,7 @@ export default function ScanPage() {
             borderRadius: "6px",
             fontWeight: direction === "IN" ? "bold" : "normal",
           }}
-        >
-          IN
-        </button>
+        >IN</button>
         <button
           onClick={() => setDirection("OUT")}
           style={{
@@ -176,9 +158,7 @@ export default function ScanPage() {
             borderRadius: "6px",
             fontWeight: direction === "OUT" ? "bold" : "normal",
           }}
-        >
-          OUT
-        </button>
+        >OUT</button>
       </div>
 
       <button
@@ -192,18 +172,14 @@ export default function ScanPage() {
           borderRadius: "4px",
           fontWeight: "bold",
         }}
-      >
-        Scan
-      </button>
+      >Scan</button>
 
       <div style={{ marginTop: 10 }}>
         <button onClick={handleCheckOverdue}>Check Overdue Now</button>
         <button
           onClick={() => {
             const csv = overdueItems
-              .map((item) =>
-                `${item.sku},"${item.title}",${item.user_name},${item.scanned_at},${item.location}`
-              )
+              .map((item) => `${item.sku},"${item.title}",${item.user_name},${item.scanned_at},${item.location}`)
               .join("\n");
             const blob = new Blob(["Barcode,Item Name,User,Timestamp,Location\n" + csv], {
               type: "text/csv",
@@ -215,9 +191,7 @@ export default function ScanPage() {
             a.click();
             window.URL.revokeObjectURL(url);
           }}
-        >
-          Download CSV
-        </button>
+        >Download CSV</button>
         <button onClick={() => window.print()}>Print</button>
         <button onClick={() => (window.location.href = "/dashboard")}>Dashboard</button>
         <button onClick={() => (window.location.href = "/sync")}>Manual Sync</button>
