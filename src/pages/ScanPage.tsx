@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { useNavigate } from "react-router-dom"; // ✅ Added for navigation
+import { useNavigate } from "react-router-dom";
 
 export default function ScanPage() {
   const [sku, setSku] = useState("");
@@ -14,7 +14,7 @@ export default function ScanPage() {
   const [itemTitle, setItemTitle] = useState<string | null>(null);
   const [itemImage, setItemImage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate(); // ✅ Initialize navigator
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchInitial = async () => {
@@ -30,17 +30,21 @@ export default function ScanPage() {
 
       setSessions(sessionData || []);
       const todaySession = sessionData?.find((s) => s.date === today);
+
       if (todaySession) {
         setSelectedSession(todaySession.id);
       } else {
-        const { data: newSession } = await supabase
+        const { data: newSession, error } = await supabase
           .from("daily_sessions")
           .insert([{ date: today }])
           .select()
           .single();
-        if (newSession) {
+
+        if (newSession && !error) {
           setSelectedSession(newSession.id);
           setSessions([newSession, ...(sessionData || [])]);
+        } else {
+          console.error("Failed to create session:", error?.message);
         }
       }
 
@@ -62,7 +66,7 @@ export default function ScanPage() {
 
     const enriched = await Promise.all(
       (rawScans || []).map(async (scan) => {
-        const { data: item, error: itemError } = await supabase
+        const { data: item } = await supabase
           .from("items")
           .select("title, image_url")
           .eq("sku", scan.sku)
@@ -81,44 +85,43 @@ export default function ScanPage() {
   };
 
   const handleScan = async () => {
-  if (!sku || !selectedUser || !selectedSession) return;
+    if (!sku || !selectedUser || !selectedSession) return;
 
-  const currentSku = sku.trim();
+    const currentSku = sku.trim();
 
-  const { data: itemData } = await supabase
-    .from("items")
-    .select("title, image_url")
-    .eq("sku", currentSku)
-    .single();
+    const { data: itemData } = await supabase
+      .from("items")
+      .select("title, image_url")
+      .eq("sku", currentSku)
+      .single();
 
-  setItemTitle(itemData?.title || null);
-  setItemImage(itemData?.image_url || null);
+    setItemTitle(itemData?.title || null);
+    setItemImage(itemData?.image_url || null);
 
-  const { error } = await supabase.from("scan_logs").insert([
-    {
-      sku: currentSku,
-      scan_type: direction.toLowerCase(),
-      user_id: selectedUser,
-      session_id: selectedSession,
-    },
-  ]);
+    const { error } = await supabase.from("scan_logs").insert([
+      {
+        sku: currentSku,
+        scan_type: direction.toLowerCase(),
+        user_id: selectedUser,
+        session_id: selectedSession,
+      },
+    ]);
 
-  if (error) {
-    console.error("Scan error:", error.message);
-    return;
-  }
-
-  // Use React's state reset with a tiny delay
-  setSku("");
-  fetchScans();
-
-  setTimeout(() => {
-    if (inputRef.current) {
-      inputRef.current.value = "";
-      inputRef.current.focus();
+    if (error) {
+      console.error("Scan error:", error.message);
+      return;
     }
-  }, 10);
-};
+
+    setSku("");
+    fetchScans();
+
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.value = "";
+        inputRef.current.focus();
+      }
+    }, 10);
+  };
 
   const handleCheckOverdue = async () => {
     const { data, error } = await supabase.rpc("get_still_out_items");
