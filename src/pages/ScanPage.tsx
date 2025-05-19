@@ -83,7 +83,7 @@ export default function ScanPage() {
   const handleScan = async () => {
   if (!sku || !selectedUser || !selectedSession) return;
 
-  const currentSku = sku.trim(); // Save before resetting
+  const currentSku = sku.trim();
 
   const { data: itemData } = await supabase
     .from("items")
@@ -108,10 +108,16 @@ export default function ScanPage() {
     return;
   }
 
-  // Clear SKU, then refocus in next animation frame
+  // Use React's state reset with a tiny delay
   setSku("");
   fetchScans();
-  setTimeout(() => inputRef.current?.focus(), 0);
+
+  setTimeout(() => {
+    if (inputRef.current) {
+      inputRef.current.value = "";
+      inputRef.current.focus();
+    }
+  }, 10);
 };
 
   const handleCheckOverdue = async () => {
