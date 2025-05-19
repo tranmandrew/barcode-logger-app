@@ -14,7 +14,7 @@ export default async function handler(req: any, res: any) {
         headers: {
           Accept: 'application/vnd.github+json',
           'Content-Type': 'application/json', // ✅ MISSING IN YOUR VERSION
-          Authorization: `Bearer ${process.env.GITHUB_PAT}`,
+          Authorization: `token ${process.env.GITHUB_PAT}`,
           'X-GitHub-Api-Version': '2022-11-28',
         },
         body: JSON.stringify({ ref: 'main' }),
@@ -26,7 +26,7 @@ export default async function handler(req: any, res: any) {
 
     if (response.ok) {
       return res.status(200).json({ message: '✅ Sync triggered successfully' });
-    } else {
+    } else {    
       return res.status(500).json({ message: '❌ GitHub sync failed', details: result });
     }
   } catch (err: any) {
