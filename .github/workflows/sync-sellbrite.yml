@@ -1,46 +1,30 @@
 name: Sync Sellbrite Inventory
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "0 3 * * *"  # 9PM CST daily
+    - cron: "0 3 * * *" # 3AM UTC == 9PM CST
+  workflow_dispatch: # UI Trigger
 
 jobs:
-  sync-inventory:
+  sync:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Node
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
 
       - name: Install dependencies
         run: npm install
 
-      - name: Run Sellbrite inventory sync
+      - name: Run sync
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SELLBRITE_API_KEY: ${{ secrets.SELLBRITE_API_KEY }}
+          SELLBRITE_API_SECRET: ${{ secrets.SELLBRITE_API_SECRET }}
         run: node scripts/sync-sellbrite.mjs
-        env:
-          SELLBRITE_API_KEY: ${{ secrets.SELLBRITE_API_KEY }}
-          SELLBRITE_API_SECRET: ${{ secrets.SELLBRITE_API_SECRET }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-
-      - name: Run image sync
-        run: |
-          echo "Starting image sync"
-          node scripts/sync-sellbrite-images.mjs
-        env:
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SELLBRITE_API_KEY: ${{ secrets.SELLBRITE_API_KEY }}
-          SELLBRITE_API_SECRET: ${{ secrets.SELLBRITE_API_SECRET }}
-
-      - name: Merge staging into items
-        run: node scripts/merge-staging-to-items.js
-        env:
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
