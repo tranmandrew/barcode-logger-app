@@ -1,61 +1,71 @@
-import 'dotenv/config';
-import fetch from 'node-fetch';
 import { createClient } from '@supabase/supabase-js';
+import 'dotenv/config';
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const SELLBRITE_API_KEY = process.env.SELLBRITE_API_KEY;
-const SELLBRITE_API_SECRET = process.env.SELLBRITE_API_SECRET;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
-const fetchSellbriteInventory = async () => {
-  let allItems = [];
+async function fetchAllProducts() {
+  const allProducts = [];
   let page = 1;
-  const pageSize = 100;
 
   while (true) {
-    const res = await fetch(`https://api.sellbrite.com/v1/inventory?page=${page}&limit=${pageSize}`, {
-      headers: {
-        Authorization: 'Basic ' + Buffer.from(`${SELLBRITE_API_KEY}:${SELLBRITE_API_SECRET}`).toString('base64')
-      }
+    const res = await fetch(`https://api.sellbrite.com/v1/products?page=${page}`, {
+      headers: { Authorization: `Bearer ${SELLBRITE_API_KEY}` },
     });
 
-    const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0) break;
+    const products = await res.json();
+    if (!Array.isArray(products) || products.length === 0) break;
 
-    allItems.push(...data);
-    console.log(`✅ Page ${page} fetched: ${data.length}`);
-    if (data.length < pageSize) break;
+    allProducts.push(...products);
+    console.log(`✅ Page ${page} fetched: ${products.length}`);
     page++;
   }
 
-  console.log(`🌍 Total products fetched: ${allItems.length}`);
-  return allItems;
-};
+  console.log(`🌍 Total products fetched: ${allProducts.length}`);
+  return allProducts;
+}
 
-const syncToSupabase = async () => {
-  const inventory = await fetchSellbriteInventory();
+function extractInventoryData(products) {
+  return products
+    .flatMap(product => {
+      const base = {
+        sku: product.sku,
+        title: product.name,
+        price: parseFloat(product.price) || 0,
+        barcode: product.sku,
+        bin_location: product.bin_location || 'unspecified',
+        image_url: product.image_url || `https://images.sellbrite.com/production/${product.sku}.jpg`,
+      };
 
-  const updates = inventory.map(item => ({
-    sku: item.sku,
-    title: item.product_name || 'EMPTY',
-    price: parseFloat(item.price || 0),
-    bin_location: item.bin_location || 'unspecified',
-    image_url: item.image_url || `https://images.sellbrite.com/production/${item.sku}`,
-    barcode: item.sku
-  }));
+      if (product.variants?.length > 0) {
+        return product.variants.map(variant => ({
+          ...base,
+          sku: variant.sku,
+          barcode: variant.sku,
+          price: parseFloat(variant.price) || base.price,
+          image_url: variant.image_url || base.image_url,
+        }));
+      }
 
-  const { data, error } = await supabase.from('items').upsert(updates, {
-    onConflict: ['sku'],
-    ignoreDuplicates: false
-  });
+      return [base];
+    })
+    .filter(p => p.sku); // remove undefined/empty SKU entries
+}
+
+async function syncToSupabase(items) {
+  const { error } = await supabase.from('items').upsert(items, { onConflict: ['sku'] });
 
   if (error) {
-    console.error('❌ Error syncing items to Supabase:', error);
+    console.error('❌ Supabase error:', error);
   } else {
-    console.log(`✅ Successfully synced ${updates.length} items to Supabase.`);
+    console.log(`✅ Successfully synced ${items.length} items to Supabase.`);
   }
-};
+}
 
-syncToSupabase();
+async function main() {
+  const products = await fetchAllProducts();
+  const extracted = extractInventoryData(products);
+  await syncToSupabase(extracted);
+}
+
+main();
