@@ -6,7 +6,7 @@ const ManualSync = () => {
   const triggerSync = async () => {
     setStatus('loading');
     try {
-      const res = await fetch('https://barcode-logger-app.vercel.app/api/trigger-sync', {
+      const res = await fetch('/api/trigger-sync', {
         method: 'POST',
       });
 
@@ -16,6 +16,7 @@ const ManualSync = () => {
         throw new Error('Failed to trigger sync');
       }
     } catch (err) {
+      console.error('[ManualSync] API call failed:', err);
       setStatus('error');
     }
   };
