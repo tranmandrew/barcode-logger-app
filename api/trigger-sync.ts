@@ -46,3 +46,4 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ message: 'Server error', error: err.message || err });
   }
 }
+console.log("🔐 GITHUB_PAT present:", !!process.env.GITHUB_PAT, "Length:", process.env.GITHUB_PAT?.length);
