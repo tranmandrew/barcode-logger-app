@@ -13,6 +13,8 @@ export default async function handler(req: any, res: any) {
   console.log('[Sync API] 📦 Payload:', payload);
   console.log('[Sync API] 🔐 Token present:', !!token);
 
+console.log("📡 Sending sync request...");
+
   try {
     const response = await fetch(githubUrl, {
       method: 'POST',
@@ -32,6 +34,7 @@ export default async function handler(req: any, res: any) {
 
     if (response.ok) {
       return res.status(200).json({ message: '✅ Sync triggered successfully' });
+      console.log("✅ Sync result:", res.status);
     } else {
       return res.status(500).json({ message: '❌ GitHub sync failed', details: result });
     }
