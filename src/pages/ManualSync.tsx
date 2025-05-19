@@ -7,8 +7,10 @@ const ManualSync = () => {
     console.log("🧩 ManualSync.tsx mounted");
   }, []);
 
-  const triggerSync = async () => {
+  const triggerSync = async (e?: React.MouseEvent<HTMLButtonElement>) => {
+    e?.preventDefault(); // ✅ Prevent page reload
     console.log("🚀 Manual Sync button clicked");
+
     setStatus('loading');
 
     try {
@@ -35,9 +37,14 @@ const ManualSync = () => {
 
   return (
     <div style={{ marginTop: 16 }}>
-      <button onClick={triggerSync} disabled={status === 'loading'}>
+      <button
+        type="button"  // ✅ Ensures no form submission happens
+        onClick={triggerSync}
+        disabled={status === 'loading'}
+      >
         {status === 'loading' ? 'Syncing...' : 'Manual Inventory Sync'}
       </button>
+
       {status === 'success' && <p>✅ Sync triggered successfully</p>}
       {status === 'error' && <p>❌ Failed to trigger sync</p>}
     </div>
