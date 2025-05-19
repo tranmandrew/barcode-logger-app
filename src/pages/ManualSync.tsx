@@ -1,16 +1,23 @@
-import React, { useState } from 'react';
-
-console.log("🔁 ManualSync.tsx mounted");
+import React, { useState, useEffect } from 'react';
 
 const ManualSync = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
+  // 🔍 Confirm component is mounted
+  useEffect(() => {
+    console.log("🧩 ManualSync.tsx mounted");
+  }, []);
+
   const triggerSync = async () => {
+    console.log("🚀 Manual Sync button clicked");
     setStatus('loading');
+
     try {
       const res = await fetch('/api/trigger-sync', {
         method: 'POST',
       });
+
+      console.log("📡 Response status:", res.status);
 
       if (res.ok) {
         setStatus('success');
@@ -18,7 +25,7 @@ const ManualSync = () => {
         throw new Error('Failed to trigger sync');
       }
     } catch (err) {
-      console.error('[ManualSync] API call failed:', err);
+      console.error('❌ Manual Sync failed:', err);
       setStatus('error');
     }
   };
