@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { useNavigate } from "react-router-dom"; // ✅ Added for navigation
 
 export default function ScanPage() {
   const [sku, setSku] = useState("");
@@ -13,6 +14,7 @@ export default function ScanPage() {
   const [itemTitle, setItemTitle] = useState<string | null>(null);
   const [itemImage, setItemImage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate(); // ✅ Initialize navigator
 
   useEffect(() => {
     const fetchInitial = async () => {
@@ -194,8 +196,8 @@ export default function ScanPage() {
           }}
         >Download CSV</button>
         <button onClick={() => window.print()}>Print</button>
-        <button onClick={() => (window.location.href = "/dashboard")}>Dashboard</button>
-        <button onClick={() => (window.location.href = "/sync")}>Manual Sync</button>
+        <button onClick={() => navigate("/dashboard")}>Dashboard</button>
+        <button onClick={() => navigate("/sync")}>Manual Sync</button>
       </div>
 
       {sku && itemTitle && (
