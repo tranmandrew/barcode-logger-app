@@ -140,6 +140,12 @@ export default function ScanPage() {
           placeholder="Enter SKU or scan"
           value={sku}
           onChange={(e) => setSku(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleScan();
+            }
+          }}
         />
         <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
           {users.map((u) => (
