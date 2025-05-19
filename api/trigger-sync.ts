@@ -13,7 +13,7 @@ export default async function handler(req: any, res: any) {
   }
 
   const payload = { ref: 'main' };
-
+console.log("🔐 GITHUB_PAT present:", !!process.env.GITHUB_PAT, "Length:", process.env.GITHUB_PAT?.length);
   try {
     console.log('[Sync API] 🚀 Sending dispatch to GitHub...');
     const ghResponse = await fetch(githubUrl, {
@@ -46,4 +46,3 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ message: 'Server error', error: err.message || err });
   }
 }
-console.log("🔐 GITHUB_PAT present:", !!process.env.GITHUB_PAT, "Length:", process.env.GITHUB_PAT?.length);
