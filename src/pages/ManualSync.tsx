@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+console.log("🔁 ManualSync.tsx mounted");
+
 const ManualSync = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
