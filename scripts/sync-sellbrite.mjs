@@ -34,7 +34,7 @@ function extractInventoryData(products) {
         price: parseFloat(product.price) || 0,
         barcode: product.sku,
         bin_location: product.bin_location || 'unspecified',
-        image_url: product.image_url || `https://images.sellbrite.com/production/${product.sku}.jpg`,
+        image_url: product.main_image_url || null,
       };
 
       if (product.variants?.length > 0) {
