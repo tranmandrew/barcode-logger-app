@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const ManualSync = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const navigate = useNavigate();
 
   useEffect(() => {
     console.log("🧩 ManualSync.tsx mounted");
   }, []);
 
   const triggerSync = async (e?: React.MouseEvent<HTMLButtonElement>) => {
-    e?.preventDefault(); // ✅ Prevent page reload
+    e?.preventDefault();
     console.log("🚀 Manual Sync button clicked");
-
     setStatus('loading');
 
     try {
@@ -26,6 +27,7 @@ const ManualSync = () => {
 
       if (res.ok) {
         setStatus('success');
+        setTimeout(() => navigate('/scan'), 3000); // Auto-redirect after 3 seconds
       } else {
         throw new Error('Failed to trigger sync');
       }
@@ -38,14 +40,14 @@ const ManualSync = () => {
   return (
     <div style={{ marginTop: 16 }}>
       <button
-        type="button"  // ✅ Ensures no form submission happens
+        type="button"
         onClick={triggerSync}
         disabled={status === 'loading'}
       >
         {status === 'loading' ? 'Syncing...' : 'Manual Inventory Sync'}
       </button>
 
-      {status === 'success' && <p>✅ Sync triggered successfully</p>}
+      {status === 'success' && <p>✅ Sync triggered successfully. Redirecting to scanner...</p>}
       {status === 'error' && <p>❌ Failed to trigger sync</p>}
     </div>
   );
