@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 const ManualSync = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-  // 🔍 Confirm component is mounted
   useEffect(() => {
     console.log("🧩 ManualSync.tsx mounted");
   }, []);
@@ -13,11 +12,15 @@ const ManualSync = () => {
     setStatus('loading');
 
     try {
+      console.log("🟡 FETCH attempt to /api/trigger-sync");
+
       const res = await fetch('/api/trigger-sync', {
         method: 'POST',
       });
 
       console.log("📡 Response status:", res.status);
+      const text = await res.text();
+      console.log("📦 Raw response body:", text);
 
       if (res.ok) {
         setStatus('success');
