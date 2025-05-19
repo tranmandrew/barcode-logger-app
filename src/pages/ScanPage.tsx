@@ -83,7 +83,7 @@ export default function ScanPage() {
   const handleScan = async () => {
   if (!sku || !selectedUser || !selectedSession) return;
 
-  const currentSku = sku.trim(); // capture before clearing
+  const currentSku = sku.trim(); // Save before resetting
 
   const { data: itemData } = await supabase
     .from("items")
@@ -103,11 +103,15 @@ export default function ScanPage() {
     },
   ]);
 
-  if (error) return console.error("Scan error:", error.message);
+  if (error) {
+    console.error("Scan error:", error.message);
+    return;
+  }
 
-  setSku(""); // Clear input
+  // Clear SKU, then refocus in next animation frame
+  setSku("");
   fetchScans();
-  requestAnimationFrame(() => inputRef.current?.focus()); // Ensure refocus
+  setTimeout(() => inputRef.current?.focus(), 0);
 };
 
   const handleCheckOverdue = async () => {
