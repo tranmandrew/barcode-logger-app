@@ -1,45 +1,48 @@
 export default async function handler(req: any, res: any) {
-  console.log('[Sync API] 🔧 Handler invoked');
-
   if (req.method !== 'POST') {
     console.log('[Sync API] ❌ Invalid method:', req.method);
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
   const githubUrl = 'https://api.github.com/repos/tranmandrew/barcode-logger-app/actions/workflows/sync-sellbrite.yml/dispatches';
-  const payload = { ref: 'main' };
   const token = process.env.GITHUB_PAT;
 
-  console.log('[Sync API] 📦 Payload:', payload);
-  console.log('[Sync API] 🔐 Token present:', !!token);
+  if (!token) {
+    console.error('[Sync API] ❌ Missing GitHub PAT');
+    return res.status(500).json({ message: 'GitHub token not found in environment variables' });
+  }
 
-console.log("📡 Sending sync request...");
+  const payload = { ref: 'main' };
 
   try {
-    const response = await fetch(githubUrl, {
+    console.log('[Sync API] 🚀 Sending dispatch to GitHub...');
+    const ghResponse = await fetch(githubUrl, {
       method: 'POST',
       headers: {
-        Accept: 'application/vnd.github+json',
+        'Authorization': `token ${token}`, // ✅ must be "token" not "Bearer"
+        'Accept': 'application/vnd.github+json',
         'Content-Type': 'application/json',
-        Authorization: `token ${token}`, // ← critical
         'X-GitHub-Api-Version': '2022-11-28',
       },
       body: JSON.stringify(payload),
     });
 
-    const result = await response.text();
+    const responseText = await ghResponse.text();
 
-    console.log('[Sync API] 📬 GitHub status:', response.status);
-    console.log('[Sync API] 📬 GitHub body:', result);
+    console.log('[Sync API] 📡 GitHub Status:', ghResponse.status);
+    console.log('[Sync API] 📦 GitHub Response:', responseText);
 
-    if (response.ok) {
+    if (ghResponse.ok) {
       return res.status(200).json({ message: '✅ Sync triggered successfully' });
-      console.log("✅ Sync result:", res.status);
     } else {
-      return res.status(500).json({ message: '❌ GitHub sync failed', details: result });
+      return res.status(500).json({
+        message: '❌ GitHub dispatch failed',
+        status: ghResponse.status,
+        response: responseText,
+      });
     }
   } catch (err: any) {
-    console.error('[Sync API] 💥 Uncaught error:', err.message || err);
+    console.error('[Sync API] 💥 Unexpected error:', err.message || err);
     return res.status(500).json({ message: 'Server error', error: err.message || err });
   }
 }
