@@ -60,11 +60,12 @@ export default function ScanPage() {
 
     const enriched = await Promise.all(
       (rawScans || []).map(async (scan) => {
-        const { data: itemData, error: itemError } = await supabase
+        const { data: item, error: itemError } = await supabase
           .from("items")
           .select("title, image_url")
           .eq("sku", scan.sku)
           .single();
+
         return {
           ...scan,
           item_title: item?.title || null,
