@@ -6,7 +6,7 @@ const ManualSync = () => {
   const triggerSync = async () => {
     setStatus('loading');
     try {
-      const res = await fetch('/api/trigger-sync', {
+      const res = await fetch('https://barcode-logger-app.vercel.app/api/trigger-sync', {
         method: 'POST',
       });
 
