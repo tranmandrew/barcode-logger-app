@@ -1,55 +1,61 @@
+import 'dotenv/config';
+import fetch from 'node-fetch';
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  console.error('Supabase URL and Service Key are required in the environment variables.');
-  process.exit(1);
-}
+const SELLBRITE_API_KEY = process.env.SELLBRITE_API_KEY;
+const SELLBRITE_API_SECRET = process.env.SELLBRITE_API_SECRET;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-const headers = {
-  Authorization: `Bearer ${process.env.SELLBRITE_API_KEY}`,
-  'Content-Type': 'application/json',
+const fetchSellbriteInventory = async () => {
+  let allItems = [];
+  let page = 1;
+  const pageSize = 100;
+
+  while (true) {
+    const res = await fetch(`https://api.sellbrite.com/v1/inventory?page=${page}&limit=${pageSize}`, {
+      headers: {
+        Authorization: 'Basic ' + Buffer.from(`${SELLBRITE_API_KEY}:${SELLBRITE_API_SECRET}`).toString('base64')
+      }
+    });
+
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) break;
+
+    allItems.push(...data);
+    console.log(`✅ Page ${page} fetched: ${data.length}`);
+    if (data.length < pageSize) break;
+    page++;
+  }
+
+  console.log(`🌍 Total products fetched: ${allItems.length}`);
+  return allItems;
 };
 
-let totalPages = 1;
-let allProducts = [];
+const syncToSupabase = async () => {
+  const inventory = await fetchSellbriteInventory();
 
-for (let page = 1; page <= totalPages; page++) {
-  const res = await fetch(`https://api.sellbrite.com/v1/products?page=${page}`, { headers });
-  const products = await res.json();
+  const updates = inventory.map(item => ({
+    sku: item.sku,
+    title: item.product_name || 'EMPTY',
+    price: parseFloat(item.price || 0),
+    bin_location: item.bin_location || 'unspecified',
+    image_url: item.image_url || `https://images.sellbrite.com/production/${item.sku}`,
+    barcode: item.sku
+  }));
 
-  if (!Array.isArray(products) || products.length === 0) break;
-
-  allProducts.push(...products);
-  console.log(`Fetched page ${page}: ${products.length} items`);
-}
-
-console.log(`Fetched total ${allProducts.length} products`);
-
-const mapped = allProducts.map((p) => ({
-  sku: p.sku,
-  title: p.name,
-  price: p.price || 0,
-  barcode: p.barcode,
-  bin_location: p.bin_location,
-  image_url: p.image_list ? p.image_list.split('|')[0] : null, // Ensure the first image is selected
-}));
-
-console.log('Uploading to Supabase...');
-
-const { error } = await supabase
-  .from('items_staging')
-  .upsert(mapped, { 
-    onConflict: ['sku'], 
+  const { data, error } = await supabase.from('items').upsert(updates, {
+    onConflict: ['sku'],
+    ignoreDuplicates: false
   });
 
-if (error) {
-  console.error('Failed to upsert to Supabase:', error);
-  process.exit(1);
-}
+  if (error) {
+    console.error('❌ Error syncing items to Supabase:', error);
+  } else {
+    console.log(`✅ Successfully synced ${updates.length} items to Supabase.`);
+  }
+};
 
-console.log('Upload to Supabase complete.');
+syncToSupabase();
