@@ -55,6 +55,25 @@ export default function ScanPage() {
     inputRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      let target = e.target as Node;
+      if (!target) return;
+      if (target instanceof Element) {
+        if (target.closest("input") || target.closest("button") || target.closest("select")) return;
+      } else {
+        const parent = target.parentElement;
+        if (parent && (parent.closest("input") || parent.closest("button") || parent.closest("select"))) return;
+      }
+      inputRef.current?.focus();
+    };
+
+    document.addEventListener("click", handleDocumentClick);
+    return () => {
+      document.removeEventListener("click", handleDocumentClick);
+    };
+  }, []);
+
   const fetchScans = async () => {
     const { data: rawScans, error } = await supabase
       .from("scan_logs")
