@@ -148,6 +148,44 @@ export default function ScanPage() {
     else setOverdueItems(data || []);
   };
 
+ const handleMarkSold = async (item: any) => {
+  const confirm = window.confirm(`Sold in stores? Mark "${item.title}" (SKU: ${item.sku}) as sold?`);
+  if (!confirm) return;
+
+  const { error: saleError } = await supabase.from("in_store_sales").insert([
+    {
+      sku: item.sku,
+      item_title: item.title,
+      sold_by: selectedUser,
+      price: item.price ?? null,
+    }
+  ]);
+
+  if (saleError) {
+    alert("❌ Failed to mark as sold.");
+    console.error(saleError.message);
+    return;
+  }
+
+  const { error: scanError } = await supabase.from("scan_logs").insert([
+    {
+      sku: item.sku,
+      scan_type: "in",
+      user_id: selectedUser,
+      session_id: selectedSession,
+    }
+  ]);
+
+  if (scanError) {
+    alert("❌ Marked as sold, but failed to scan IN.");
+    console.error(scanError.message);
+    return;
+  }
+
+  setOverdueItems((prev) => prev.filter((it) => it.sku !== item.sku));
+  alert("✅ Item marked as sold and scanned IN.");
+};
+
   return (
     <div style={{ padding: 24 }}>
       <h2 style={{ fontSize: 20, fontWeight: "bold" }}>📦 Barcode Scanner</h2>
@@ -254,6 +292,20 @@ export default function ScanPage() {
               <li key={i}>
                 #{item.sku} — {item.title} — Last scanned by {item.user_name} at{" "}
                 {new Date(item.scanned_at).toLocaleString()} in {item.location}
+<button
+  onClick={() => handleMarkSold(item)}
+  style={{
+    marginLeft: 8,
+    padding: "2px 6px",
+    borderRadius: 4,
+    background: "#4CAF50",
+    color: "white",
+    border: "none"
+  }}
+>
+  Mark as Sold
+</button>
+
               </li>
             ))}
           </ul>
@@ -269,7 +321,7 @@ export default function ScanPage() {
               <span style={{ color: s.scan_type === "in" ? "#4CAF50" : "#f44336" }}>
                 {s.scan_type.toUpperCase()}
               </span>{" "}
-              @ {new Date(s.timestamp).toLocaleString()}{" "}
+              @ {new Date(s.timestamp).toLocaleString()} {" "}
               {s.item_title ? `— ${s.item_title}` : ""}
             </li>
           ))}
