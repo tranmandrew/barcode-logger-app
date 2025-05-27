@@ -23,7 +23,7 @@ export default function OverviewPage() {
     const { data, error } = await supabase
       .from("scan_logs")
       .select("*, items(title)")
-      .eq("session_id", sessionId)
+      .eq("session_id", parseInt(sessionId))
       .order("timestamp", { ascending: true });
 
     if (error) console.error("Error loading scan logs:", error.message);
@@ -41,11 +41,11 @@ export default function OverviewPage() {
             <button
               key={s.id}
               className={`px-4 py-2 rounded-full border ${
-                selectedSession === s.id
+                selectedSession === s.id.toString()
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-black"
               }`}
-              onClick={() => loadSessionLogs(s.id)}
+              onClick={() => loadSessionLogs(s.id.toString())}
             >
               {s.date}
             </button>
@@ -55,7 +55,7 @@ export default function OverviewPage() {
 
       {selectedSession && (
         <div>
-          <h3 className="font-semibold mb-2">Scans for {sessions.find(s => s.id === selectedSession)?.date}:</h3>
+          <h3 className="font-semibold mb-2">Scans for {sessions.find(s => s.id.toString() === selectedSession)?.date}:</h3>
           <ul className="space-y-1">
             {scans.length > 0 ? (
               scans.map((scan) => (
