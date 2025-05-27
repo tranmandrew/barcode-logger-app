@@ -3,7 +3,7 @@ import { supabase } from "../lib/supabaseClient";
 
 export default function OverviewPage() {
   const [sessions, setSessions] = useState<any[]>([]);
-  const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [selectedSession, setSelectedSession] = useState<number | null>(null);
   const [scans, setScans] = useState<any[]>([]);
 
   useEffect(() => {
@@ -18,17 +18,20 @@ export default function OverviewPage() {
     fetchSessions();
   }, []);
 
-  const loadSessionLogs = async (sessionId: string) => {
-    setSelectedSession(sessionId);
-    const { data, error } = await supabase
-      .from("scan_logs")
-      .select("*, items(title)")
-      .eq("session_id", parseInt(sessionId))
-      .order("timestamp", { ascending: true });
+  useEffect(() => {
+    const loadSessionLogs = async () => {
+      if (!selectedSession) return;
+      const { data, error } = await supabase
+        .from("scan_logs")
+        .select("*, items(title)")
+        .eq("session_id", selectedSession)
+        .order("timestamp", { ascending: true });
 
-    if (error) console.error("Error loading scan logs:", error.message);
-    else setScans(data || []);
-  };
+      if (error) console.error("Error loading scan logs:", error.message);
+      else setScans(data || []);
+    };
+    loadSessionLogs();
+  }, [selectedSession]);
 
   return (
     <div className="p-4">
@@ -41,11 +44,11 @@ export default function OverviewPage() {
             <button
               key={s.id}
               className={`px-4 py-2 rounded-full border ${
-                selectedSession === s.id.toString()
+                selectedSession === s.id
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-black"
               }`}
-              onClick={() => loadSessionLogs(s.id.toString())}
+              onClick={() => setSelectedSession(s.id)}
             >
               {s.date}
             </button>
@@ -55,7 +58,7 @@ export default function OverviewPage() {
 
       {selectedSession && (
         <div>
-          <h3 className="font-semibold mb-2">Scans for {sessions.find(s => s.id.toString() === selectedSession)?.date}:</h3>
+          <h3 className="font-semibold mb-2">Scans for {sessions.find(s => s.id === selectedSession)?.date}:</h3>
           <ul className="space-y-1">
             {scans.length > 0 ? (
               scans.map((scan) => (
