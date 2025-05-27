@@ -12,6 +12,7 @@ export default function App() {
           <Route path="/" element={<ScanPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/sync" element={<ManualSync />} /> {/* Add new route */}
+          <Route path="/overview" element={<OverviewPage />} />
         </Routes>
       </div>
     </BrowserRouter>
